@@ -13,6 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CandidateApp.Domain", "Cand
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C8A2A4F2-AF13-44B7-883A-362128A6A05F}"
 	ProjectSection(SolutionItems) = preProject
+		azure-pipelines.yml = azure-pipelines.yml
 		docker-compose.yml = docker-compose.yml
 	EndProjectSection
 EndProject

@@ -1,0 +1,67 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  dockerImageName: 'candidateapp-api'
+  dockerRegistryServiceConnection: 'backendapi.azurecr.io'  
+
+jobs:
+  - job: BuildAndTest
+    displayName: 'Build and Test'
+    steps:
+    
+      # Setup .NET SDK
+      - task: UseDotNet@2
+        inputs:
+          packageType: 'sdk'
+          version: '6.x'
+      
+      # Docker Build for API and Test Services
+      - task: Docker@2
+        inputs:
+          containerRegistry: $(dockerRegistryServiceConnection)
+          repository: $(dockerImageName)
+          command: 'buildAndPush'
+          dockerfile: '$(Build.SourcesDirectory)/CandidateApp.Api/Dockerfile'
+          tags: '$(Build.BuildId)'
+
+      - task: Docker@2
+        inputs:
+          containerRegistry: $(dockerRegistryServiceConnection)
+          repository: 'candidateapp-tests'
+          command: 'build'
+          dockerfile: '$(Build.SourcesDirectory)/CandidateApp.Tests/Dockerfile'
+          tags: '$(Build.BuildId)'
+
+      # Run Docker Compose (for local testing)
+      - task: DockerCompose@0
+        displayName: 'Run Docker Compose'
+        inputs:
+          containerRegistry: $(dockerRegistryServiceConnection)
+          dockerComposeFile: '$(Build.SourcesDirectory)/docker-compose.yml'
+          action: 'Run services'
+          detached: true
+
+      # Run tests on the candidateapp-tests container
+      - script: docker run candidateapp-tests
+        displayName: 'Run Unit Tests'
+
+  - job: Deploy
+    displayName: 'Deploy to Azure'
+    dependsOn: BuildAndTest
+    condition: succeeded()
+
+    steps:
+      # Azure Web App Deployment
+      - task: AzureWebAppContainer@1
+        inputs:
+          azureSubscription: 'your-azure-subscription'
+          appName: 'candidateapp-webapp'
+          imageName: '$(dockerRegistryServiceConnection)/$(dockerImageName):$(Build.BuildId)'
+          containerRegistry: $(dockerRegistryServiceConnection)
+          isDocker: true
