@@ -1,0 +1,34 @@
+﻿services:
+  candidateapp-api:
+    image: candidateapp-api
+    build:
+      context: .
+      dockerfile: CandidateApp.Api/Dockerfile
+    ports:
+      - "5000:8080" # Map container port 80 to host port 5000
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=172.28.72.171;Database=CandidateDb;User=sa;Password=Test@12345
+    depends_on:
+      - sql-server
+
+  sql-server:
+    image: mcr.microsoft.com/mssql/server:2022-CU16-ubuntu-22.04
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Test@12345
+    ports:
+      - "1433:1433" # Map SQL Server port
+    networks:
+      - candidateapp-network
+  candidateapp-tests:
+    build:
+      context: .
+      dockerfile: CandidateApp.Tests/Dockerfile
+    depends_on:
+      - candidateapp-api
+    networks:
+      - candidateapp-network
+networks:
+  candidateapp-network:
+    driver: bridge
